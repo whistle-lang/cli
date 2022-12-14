@@ -1,20 +1,27 @@
 [package]
-name = "cli"
+name = "whiskey"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "whisky"
+name = "whiskey"
 path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-whistle_lexer = { git = "https://github.com/MierenManz/whistle", branch = "imports"}
-whistle_parser = { git = "https://github.com/MierenManz/whistle", branch = "imports"}
-whistle_common = { git = "https://github.com/MierenManz/whistle", branch = "imports"}
-whistle_ast = { git = "https://github.com/MierenManz/whistle", branch = "imports"}
-whistle_compiler = { git = "https://github.com/MierenManz/whistle", branch = "imports"}
-whistle_preprocessor = { git = "https://github.com/MierenManz/whistle", branch = "imports"}
-clap = { version = "4.0.29", features = ["derive"]}
-wabt = "0.9.1"
+whistle_lexer = { git = "https://github.com/MierenManz/whistle", branch = "imports" }
+whistle_parser = { git = "https://github.com/MierenManz/whistle", branch = "imports" }
+whistle_common = { git = "https://github.com/MierenManz/whistle", branch = "imports" }
+whistle_ast = { git = "https://github.com/MierenManz/whistle", branch = "imports" }
+whistle_compiler = { git = "https://github.com/MierenManz/whistle", branch = "imports" }
+whistle_preprocessor = { git = "https://github.com/MierenManz/whistle", branch = "imports" }
+clap = { version = "4.0.29", features = ["derive"] }
+wabt = "0.10.0"
+wasmer = "3.1.0"
+wasmer-wasi = "3.1.0"
+wasmer-compiler-cranelift = "3.1.0"
+
+[dependencies.uuid]
+version = "1.2.2"
+features = ["v4", "fast-rng", "macro-diagnostics"]

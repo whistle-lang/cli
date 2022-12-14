@@ -33,15 +33,6 @@ pub fn parse(text: &str, print: bool) -> Grammar {
   }
 }
 
-pub fn check(text: &str) {
-  let mut grammar = parse(text, false);
-  let checker = &mut Checker::new();
-
-  check_grammar(checker, &mut grammar);
-
-  // println!("{:#?}", grammar);
-}
-
 pub fn compile(text: &str) -> Vec<u8> {
   let mut grammar = parse(text, false);
   let compiler = &mut Compiler::new();
