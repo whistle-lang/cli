@@ -1,7 +1,6 @@
 use whistle_ast::Grammar;
 use whistle_common::TokenItem;
 use whistle_compiler::*;
-// use whistle_lexer::*;
 use whistle_parser::*;
 use whistle_preprocessor::Preprocessor;
 

@@ -1,7 +1,6 @@
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Parser, Subcommand};
 use std::fs;
 use std::time::Instant;
-use wabt::Wasm2Wat;
 use wasmer::{Instance, Module, Store};
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_wasi::WasiState;
@@ -22,31 +21,16 @@ enum Commands {
     /// compiles and runs the code
     #[command(arg_required_else_help = true)]
     Run { path: String },
-    /// compiles the file to a wat file
-    #[command(arg_required_else_help = true)]
-    PrettyCompile {
+
+    /// compiles the file
+    Compile {
         /// input
+        #[arg(value_name = "INPUT")]
         path: String,
         /// output file
-        #[arg(short = 'o')]
+        #[arg(short = 'o', long = "output", value_name = "OUTPUT")]
         output: String,
     },
-}
-
-#[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
-enum ColorWhen {
-    Always,
-    Auto,
-    Never,
-}
-
-impl std::fmt::Display for ColorWhen {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.to_possible_value()
-            .expect("no values are skipped")
-            .get_name()
-            .fmt(f)
-    }
 }
 
 fn main() {
@@ -68,23 +52,19 @@ fn main() {
             let start = instance.exports.get_function("_start").unwrap();
             start.call(&mut store, &[]).unwrap();
         }
-        Commands::PrettyCompile { path, output } => {
+        Commands::Compile { path, output } => {
             let now = Instant::now();
             let text =
                 fs::read_to_string(path).expect("Something went wrong, we can't read this file.");
             let bytes = util::compile(&text);
-            let wasm_text = String::from_utf8(
-                Wasm2Wat::new()
-                    .fold_exprs(true)
-                    .inline_export(true)
-                    .convert(bytes)
-                    .unwrap()
-                    .as_ref()
-                    .to_vec(),
-            )
-            .unwrap();
-            fs::write(output, wasm_text.as_bytes())
+            if output.ends_with(".wat") {
+                let wasm_text = wasmprinter::print_bytes(&bytes).unwrap();
+                fs::write(output, wasm_text.as_bytes())
+                    .expect("Something went wrong, we can't write this file.");
+            } else {
+                fs::write(output, bytes)
                 .expect("Something went wrong, we can't write this file.");
+            }
             println!(
                 "Operation complete! Took us about {} seconds.",
                 now.elapsed().as_secs_f64()
