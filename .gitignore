@@ -2,3 +2,4 @@
 *.whi
 *.wat
 *.wasm
+Cargo.lock
