@@ -15,6 +15,7 @@ use tower_lsp::{LspService, Server};
 
 #[derive(Debug, Parser)]
 #[command(name = "whiskey")]
+#[command(author = "The Whistle Authors")]
 #[command(about = "Next gen Whistle CLI", long_about = None)]
 struct Cli {
     #[command(subcommand)]
@@ -37,12 +38,8 @@ enum Commands {
         output: Option<String>,
     },
 
-    /// launches the lsp
+    /// launches the language Server
     Lsp,
-
-    /// Builds whistle project
-    #[command(arg_required_else_help = true)]
-    Build { path: String },
 }
 
 #[tokio::main]
@@ -65,9 +62,6 @@ async fn main() {
             wasi_env.data_mut(&mut store).set_memory(memory.clone());
             let start = instance.exports.get_function("_start").unwrap();
             start.call(&mut store, &[]).unwrap();
-        }
-        Commands::Build{ path: _ } => {
-            unimplemented!()
         }
         Commands::Compile { path, output } => {
             let now = Instant::now();
