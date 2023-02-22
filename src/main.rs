@@ -6,8 +6,11 @@ use wasmer::{Instance, Module, Store};
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_wasi::WasiState;
 
+mod config;
 mod lsp;
 mod util;
+
+use config::Config;
 
 use lsp::WhistleBackend;
 
@@ -26,7 +29,9 @@ struct Cli {
 enum Commands {
     /// compiles and runs the code
     #[command(arg_required_else_help = true)]
-    Run { path: String },
+    Run {
+        path: String,
+    },
 
     /// compiles the file
     Compile {
@@ -38,6 +43,7 @@ enum Commands {
         output: Option<String>,
     },
 
+    Build,
     /// launches the language Server
     Lsp,
 }
@@ -63,6 +69,24 @@ async fn main() {
             let start = instance.exports.get_function("_start").unwrap();
             start.call(&mut store, &[]).unwrap();
         }
+
+        Commands::Build => {
+            let now = Instant::now();
+            let text = fs::read_to_string("./Whiskey.toml")
+                .expect("Something went wrong, we can't read this file.");
+            let config: Config = toml::from_str(text.as_str()).unwrap();
+            let text = fs::read_to_string(&config.package.path)
+                .expect("Something went wrong, we can't read this file.");
+            let bytes = util::compile(&text);
+            fs::write(config.package.name + ".wasm", bytes)
+                .expect("Something went wrong, we can't write this file.");
+
+            println!(
+                "Operation complete! Took us about {} seconds.",
+                now.elapsed().as_secs_f64()
+            );
+        }
+
         Commands::Compile { path, output } => {
             let now = Instant::now();
             let output = output.unwrap_or(path.replace(".whi", ".wasm"));

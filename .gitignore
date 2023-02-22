@@ -3,3 +3,4 @@
 *.wat
 *.wasm
 Cargo.lock
+Whiskey.toml
