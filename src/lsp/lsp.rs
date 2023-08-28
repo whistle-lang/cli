@@ -1,10 +1,26 @@
+use ropey::Rope;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 
 #[derive(Debug)]
+pub struct Document {
+    pub language_id: String,
+    pub text: Rope,
+}
+
+impl Document {
+    pub fn new(language_id: String, text: Rope) -> Self {
+        Self { language_id, text }
+    }
+}
+#[derive(Debug)]
 pub struct WhistleBackend {
     pub client: Client,
+    pub document_map: Arc<RwLock<HashMap<String, Document>>>,
 }
 
 #[tower_lsp::async_trait]
@@ -12,6 +28,9 @@ impl LanguageServer for WhistleBackend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
+                text_document_sync: Some(TextDocumentSyncCapability::Kind(
+                    TextDocumentSyncKind::FULL,
+                )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 completion_provider: Some(CompletionOptions::default()),
                 ..Default::default()
@@ -22,7 +41,7 @@ impl LanguageServer for WhistleBackend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "Whistle language server initialized")
+            .log_message(MessageType::INFO, "Whistle language server initialized!")
             .await;
     }
 
@@ -47,17 +66,30 @@ impl LanguageServer for WhistleBackend {
     //         .log_message(MessageType::INFO, "watched files have changed!")
     //         .await;
     // }
-    // async fn did_open(&self, _: DidOpenTextDocumentParams) {
-    //     self.client
-    //         .log_message(MessageType::INFO, "file opened!")
-    //         .await;
-    // }
+    async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        let rope = ropey::Rope::from_str(&params.text_document.text);
+        let uri = params.text_document.uri.to_string();
+        *self
+            .document_map
+            .write()
+            .await
+            .entry(uri.clone())
+            .or_insert(Document::new("unknown".to_owned(), Rope::new())) =
+            Document::new(params.text_document.language_id, rope);
+    }
 
-    // async fn did_change(&self, _: DidChangeTextDocumentParams) {
-    //     self.client
-    //         .log_message(MessageType::INFO, "file changed!")
-    //         .await;
-    // }
+    async fn did_change(&self, params: DidChangeTextDocumentParams) {
+        let rope = ropey::Rope::from_str(&params.content_changes[0].text);
+        let uri = params.text_document.uri.to_string();
+        let mut document_map = self.document_map.write().await;
+        let doc = document_map
+            .entry(uri.clone())
+            .or_insert(Document::new("unknown".to_owned(), Rope::new()));
+        doc.text = rope;
+        self.client
+            .log_message(MessageType::INFO, format!("{}", doc.text.to_string()))
+            .await;
+    }
 
     // async fn did_save(&self, _: DidSaveTextDocumentParams) {
     //     self.client
@@ -91,7 +123,7 @@ impl LanguageServer for WhistleBackend {
             CompletionItem::new_simple("none".to_string(), "no value".to_string()),
             //keywords
             CompletionItem::new_simple("import".to_string(), "import declaration".to_string()),
-            CompletionItem::new_simple("extern".to_string(), "import external functions from a namespace".to_string()),
+            CompletionItem::new_simple("builtin".to_string(), "builtin declaration".to_string()),
             CompletionItem::new_simple("fn".to_string(), "declares a function".to_string()),
             CompletionItem::new_simple("export".to_string(), "export declaration".to_string()),
             CompletionItem::new_simple("return".to_string(), "return statement".to_string()),

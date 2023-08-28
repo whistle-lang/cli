@@ -22,11 +22,14 @@ wasmer = "3.1.0"
 wasmer-wasi = "3.1.0"
 wasmer-compiler-cranelift = "3.1.0"
 tokio = { version = "1.23.0", features = ["full"] }
-tower-lsp = { version = "0.18.0"}
+tokio-util = { version = "0.7", features = ["compat"] }
+tower-lsp = { version = "0.20.0"}
 toml = "0.7.2"
+tracing-subscriber = "0.3"
 serde = { version = "1.0.149", features = ["derive"] }
 serde_json = "1.0.89"
 futures = "0.3.25"
+ropey = "1.6.0"
 
 [dependencies.uuid]
 version = "1.2.2"

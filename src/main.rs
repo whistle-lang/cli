@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
-use std::fs;
+use std::collections::HashMap;
 use std::time::Instant;
+use std::{fs, sync::Arc};
+use tokio::sync::RwLock;
 use uuid::Uuid;
 use wasmer::{Instance, Module, Store};
 use wasmer_compiler_cranelift::Cranelift;
@@ -105,10 +107,14 @@ async fn main() {
                 now.elapsed().as_secs_f64()
             );
         }
+
         Commands::Lsp => {
-            let stdin = tokio::io::stdin();
-            let stdout = tokio::io::stdout();
-            let (service, socket) = LspService::new(|client| WhistleBackend { client });
+            tracing_subscriber::fmt().init();
+            let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
+            let (service, socket) = LspService::new(|client| WhistleBackend {
+                client,
+                document_map: Arc::new(RwLock::new(HashMap::new())),
+            });
             Server::new(stdin, stdout, socket).serve(service).await;
         }
     }
